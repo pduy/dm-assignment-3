@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def plot_surface(clf, X, y,
-        xlim=(-10, 10), ylim=(-10, 10), n_steps=250,
+        xlim=(-3, 4), ylim=(-3, 4), n_steps=250,
         subplot=None, show=True):
     if subplot is None:
         fig = plt.figure()
@@ -25,7 +25,8 @@ def plot_surface(clf, X, y,
             plt.show()
 
 def main():
-    X, y = datasets.make_moons(n_samples=200, shuffle=True, noise=None, random_state=None)
+    X, y = datasets.make_moons(n_samples=200, shuffle=True, noise=0.5, random_state=None)
+    plt.scatter(X[:, 0], X[:, 1], c=y)
     for i in range(8):
         clf = RandomForestClassifier(n_estimators = 2**i)   
         clf.fit(X,y)

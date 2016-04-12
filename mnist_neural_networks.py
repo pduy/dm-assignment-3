@@ -6,6 +6,8 @@ from keras.utils import np_utils, generic_utils
 from keras.regularizers import l2
 import numpy as np
 from sklearn import cross_validation as cv
+from keras.callbacks import EarlyStopping
+
 
 def load_data():
     pixel = 'pixel'
@@ -18,7 +20,8 @@ def load_data():
 
 def train_neural_network(X, y, sgd, decay):
     model = Sequential()
-    model.add(Dense(output_dim = 50, W_regularizer = l2(decay), input_dim = 784, init = 'uniform'))
+    #model.add(Dense(output_dim = 50, W_regularizer = l2(decay), input_dim = 784, init = 'uniform'))
+    model.add(Dense(output_dim = 50, input_dim = 784, init = 'uniform'))
     model.add(Activation('sigmoid'))
     model.add(Dense(output_dim = 10, init = 'uniform' ))
     model.add(Activation('softmax'))
@@ -31,15 +34,16 @@ def train_neural_network(X, y, sgd, decay):
 
     model.compile(loss='categorical_crossentropy', optimizer=sgd)
     
-    model.fit(X_train, y_train, nb_epoch=1000, batch_size=5000, validation_split=0.1, show_accuracy=True)
-    score = model.evaluate(X_test, y_test, batch_size=10000)
-    y_predict = model.predict_classes(X_test, batch_size=60)
+    stopping_pointer = EarlyStopping(monitor='loss', patience=0, verbose=0, mode='auto')
+    model.fit(X_train, y_train, nb_epoch=10000, batch_size=1000, show_accuracy=True, callbacks = [stopping_pointer])
+    score = model.evaluate(X_test, y_test, batch_size=600)
+    y_predict = model.predict_classes(X_test, batch_size=600)
     mis_classification_rate = (1.0 * np.count_nonzero(y_predict - y_test_original) / len(y_predict))
 
     return score, mis_classification_rate
 
 def random_search(X, y, n_iter):
-    momentums = [0.5, 0.9, 0.95, 0.99]
+    momentums = [0.09, 0.099, 0.5, 0.9, 0.95, 0.99]
     decays = [0.01, 0.1, 0.5, 1, 2, 5]
     min_error = min_score = np.inf
     min_decay = 0
@@ -58,23 +62,24 @@ def random_search(X, y, n_iter):
             min_decay = decay
             min_momentum = momentum 
 
-    return min_score, min_error, min_decay, min_momentum
-
-def main():
-    X, y = load_data()
-    #X_train, X_test, y_train, y_test = cv.train_test_split(X, y, test_size=.14, random_state=0)
-
-    
-    sgd = SGD(lr=0.001, momentum = 0.9, nesterov = True)
-    #score, mis_classification_rate = train_neural_network(X, y, sgd, 0.1)
-    min_score, min_error, min_decay, min_momentum = random_search(X, y, 7)
-    #print 'score = %s' % score
-    #print 'mis_classification_rate = %s' % mis_classification_rate
-
     print 'min_score: %s' % min_score
     print 'min_error: %s' % min_error
     print 'min_decay: %s' % min_decay
     print 'min_momentum: %s' % min_momentum
+
+    return min_score, min_error, min_decay, min_momentum
+
+def print_training_result(X, y):
+    sgd = SGD(lr=0.001, nesterov = True)
+    score, mis_classification_rate = train_neural_network(X, y, sgd, 0.1)
+    print 'score = %s' % score
+    print 'mis_classification_rate = %s' % mis_classification_rate
+
+def main():
+    X, y = load_data()
+
+    min_score, min_error, min_decay, min_momentum = random_search(X, y, 12)
+    #print_training_result(X, y)
 
 if __name__ == '__main__':
     main()
