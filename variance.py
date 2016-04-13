@@ -8,27 +8,6 @@ from sklearn.cross_validation import train_test_split
 from sklearn.utils import resample
 from sklearn import metrics
 
-n_trees =  np.logspace( 0, 7,8, base=2)
-estimators = []
-for n in n_trees:
-	estimators.append((str(n)+'tree', BaggingClassifier(DecisionTreeClassifier(), n_estimators = int(n))))
-# estimators = [("Tree", DecisionTreeClassifier()),
-#               ("Bagging(Tree)", BaggingClassifier(DecisionTreeClassifier(),n_estimators= 10)),
-#               ("Bagging(Tree)", BaggingClassifier(DecisionTreeClassifier(),n_estimators= 20)),
-#               ("Bagging(Tree)", BaggingClassifier(DecisionTreeClassifier(),n_estimators= 30)),
-#               ("Bagging(Tree)", BaggingClassifier(DecisionTreeClassifier(),n_estimators= 40)),
-#               ("Bagging(Tree)", BaggingClassifier(DecisionTreeClassifier(),n_estimators= 50))
-#               ]
-
-
-X, y , attri_names = generate.return_data()
-
-n_test = 1000
-n_repeat = 100 # number of repeats for getting bias, variance, ...
-bias = []
-var = []
-auc = []
-
 def resample_split(state):
 	# Train index
 	train_index = resample(range(0,len(X)), random_state = state, n_samples = n_test)
@@ -39,6 +18,20 @@ def resample_split(state):
 	X_test = [X[i] for i in range(len(X)) if i not in train_index]
 	y_test = [y[i] for i in range(len(X)) if i not in train_index]	
 	return X_train, y_train, X_test, y_test, test_index
+
+
+n_trees =  np.logspace( 0, 7,8, base=2)
+estimators = []
+for n in n_trees:
+	estimators.append((str(n)+'tree', RandomForestClassifier(n_estimators = int(n))))
+	
+X, y , attri_names = generate.return_data()
+
+n_test = 1000
+n_repeat = 100 # number of repeats for getting bias, variance, ...
+bias = []
+var = []
+auc = []
 
 # For each bagging estimators, run n_repeat times
 for n, (name, estimator) in enumerate(estimators):
