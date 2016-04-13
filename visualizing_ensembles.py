@@ -25,7 +25,7 @@ def plot_surface(clf, X, y,
             plt.show()
 
 def main():
-    X, y = datasets.make_moons(n_samples=200, shuffle=True, noise=0.5, random_state=None)
+    X, y = datasets.make_moons(n_samples=200, shuffle=True, noise=0.1, random_state=None)
     plt.scatter(X[:, 0], X[:, 1], c=y)
     for i in range(8):
         clf = RandomForestClassifier(n_estimators = 2**i)   
