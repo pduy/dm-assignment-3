@@ -6,110 +6,114 @@ from sklearn.utils import resample
 from sklearn.metrics import roc_auc_score
 
 def resample_split(X, y, state):
-	# Train index
-	train_index = resample(range(0,len(X)), random_state = state, n_samples = n_train)
-	X_train = X[train_index]
-	y_train = y[train_index]
-	# Test are the rest
-	test_index = [i for i in range(len(X)) if i not in train_index]
-	X_test = [X[i] for i in range(len(X)) if i not in train_index]
-	y_test = [y[i] for i in range(len(X)) if i not in train_index]	
-	return X_train, y_train, X_test, y_test, test_index
+    # Train index
+    train_index = resample(range(0,len(X)), random_state = state, n_samples = n_train)
+    X_train = X[train_index]
+    y_train = y[train_index]
+    # Test are the rest
+    test_index = [i for i in range(len(X)) if i not in train_index]
+    X_test = [X[i] for i in range(len(X)) if i not in train_index]
+    y_test = [y[i] for i in range(len(X)) if i not in train_index]  
+    return X_train, y_train, X_test, y_test, test_index
 
 def main():
-	global n_trees
-	n_trees =  np.logspace( 0, 7,8, base=2)
-	estimators = []
-	for n in n_trees:
-		estimators.append((str(n)+'tree', RandomForestClassifier(n_estimators = int(n))))
-		
-	X, y , attri_names = generate.return_data()
+    global n_trees
+    n_trees =  np.logspace( 0, 7,8, base=2)
+    estimators = []
+    for n in n_trees:
+        estimators.append((str(n)+'tree', RandomForestClassifier(n_estimators = int(n))))
+        
+    X, y , attri_names = generate.return_data()
 
-	global n_train
-	global bias 
-	global var
-	global auc
-	n_train = 1000
-	n_repeat = 50
-	bias = []
-	var = []
-	auc = []
+    global n_train
+    global bias 
+    global var
+    global auc
+    n_train = 1000
+    n_repeat = 50
+    bias = []
+    var = []
+    auc = []
 
-	# For each bagging estimators, run n_repeat times
-	for n, (name, estimator) in enumerate(estimators):
+    # For each bagging estimators, run n_repeat times
+    for n, (name, estimator) in enumerate(estimators):
 
-		y_predict = np.zeros((len(X), n_repeat))
-		occurence = np.zeros(len(X))
-		# index = np.zeros((len(X), n_repeat))
-		# Store list for calculate AUC
-		prediction = []
-		true = []
+        y_predict = np.zeros((len(X), n_repeat))
+        occurence = np.zeros(len(X))
+        # index = np.zeros((len(X), n_repeat))
+        # Store list for calculate AUC
+        prediction = []
+        true = []
 
-		for i in range(n_repeat):
-			X_train, y_train,  X_test, y_test, test_index = resample_split(X,y,i)
-			for s in test_index:
-				occurence[s] += 1
-				# index[s,i] += 1 
+        for i in range(n_repeat):
+            X_train, y_train,  X_test, y_test, test_index = resample_split(X,y,i)
+            for s in test_index:
+                occurence[s] += 1
+                # index[s,i] += 1 
 
-			estimator.fit(X_train, y_train)
-			predict = estimator.predict(X_test)
-			# Count for prediction of class 1
-			for p in range(len(X_test)):
-				y_predict[test_index[p],i] = predict[p]
+            estimator.fit(X_train, y_train)
+            predict = estimator.predict(X_test)
+            # Count for prediction of class 1
+            for p in range(len(X_test)):
+                y_predict[test_index[p],i] = predict[p]
 
-		y_var = np.zeros((len(X),1))
-		y_bias = np.zeros((len(X),1))
-		for row in range(len(X)):
+        y_var = np.zeros(len(X))
+        y_bias = np.zeros((len(X),1))
+        for row in range(len(X)):
 
-			y1 = sum(y_predict[row])
-			y0 = occurence[row] - y1
-			# y0 = sum(index[row])-y1
-			
-			if y[row]:		# true label == 1
-				mis = y0
-			else: 
-				mis = y1
+            y1 = sum(y_predict[row])
+            y0 = occurence[row] - y1
+            # y0 = sum(index[row])-y1
+            
+            if y[row]:      # true label == 1
+                mis = y0
+            else: 
+                mis = y1
 
+            if occurence[row]:
+                weight = occurence[row]/ len(X)
+                y_bias[row] = np.square(mis/ occurence[row]) * weight
+                y_var[row] = 1- 0.5 * (np.square(y1/occurence[row]) + np.square(y0/ occurence[row]))
+                y_var[row] *= weight
 
-			if occurence[row]:
-				weight = occurence[row]/ len(X)
-				y_bias[row] = np.square(mis/ occurence[row]) * weight
-				y_var[row] = 1- 0.5 * (np.square(y1/occurence[row]) + np.square(y0/ occurence[row]))
-				y_var[row] *= weight
+                # Stroe prediction for AUC values
+                prediction.append(y1/occurence[row])
+                true.append(y[row])
 
-				# Stroe prediction for AUC values
-				prediction.append(y1/occurence[row])
-				true.append(y[row])
+            else:
+                y_var[row] = 0
+                y_bias[row] = 0
 
-			else:
-				y_var[row] = 0
-				y_bias[row] = 0
+        # Sum over itterations
+        bias.append(sum(y_bias)/len(X))
+        var.append(sum(y_var)/len(X))
+        auc.append(roc_auc_score(true, prediction))
 
-		# Sum over itterations
-		bias.append(sum(y_bias)/len(X))
-		var.append(sum(y_var)/len(X))
-		auc.append(roc_auc_score(true, prediction))
-
-	line_graph(n_repeat)
+    line_graph(n_repeat)
 
 def line_graph(n_repeat):
-	# Plot var 
-	plt.subplot(311)
-	plt.title('Bagging Performances against number of trees' + '\n' + str(n_repeat) + ' iterations')
-	plt.plot(range(len(n_trees)), var, label = 'var' )
-	plt.xticks( range(len(n_trees)), n_trees)
-	plt.legend(loc="upper right")
-	# Plot bias
-	plt.subplot(312)
-	plt.plot(range(len(n_trees)), bias, label = 'bias', color = 'green')
-	plt.xticks( range(len(n_trees)), n_trees)
-	plt.legend(loc="upper right")
-	# Plot auc
-	plt.subplot(313)
-	plt.plot(range(len(n_trees)), auc, label = 'auc', color = 'red')
-	plt.xticks( range(len(n_trees)), n_trees)
-	plt.legend(loc="upper right")
-	plt.show()
+    # Plot var 
+    plt.subplot(311)
+    plt.title('Bagging Performances against number of trees' + '\n' + str(n_repeat) + ' iterations')
+    plt.plot(range(len(n_trees)), var, label = 'var' )
+    plt.xticks( range(len(n_trees)), n_trees)
+    plt.legend(loc="upper right")
+    # Plot bias
+    plt.subplot(312)
+    plt.plot(range(len(n_trees)), bias, label = 'bias', color = 'green')
+    plt.xticks( range(len(n_trees)), n_trees)
+    plt.legend(loc="upper right")
+    # Plot auc
+    plt.subplot(313)
+    plt.plot(range(len(n_trees)), auc, label = 'auc', color = 'red')
+    plt.xticks( range(len(n_trees)), n_trees)
+    plt.legend(loc="upper right")
+    plt.show()
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
