@@ -20,7 +20,7 @@ def load_data():
 
 def train_neural_network(X, y, sgd, decay):
     model = Sequential()
-    model.add(Dense(output_dim = 50, W_regularizer = l2(decay), input_dim = 784, init = 'uniform'))
+    model.add(Dense(output_dim = 100, W_regularizer = l2(decay), input_dim = 784, init = 'uniform'))
     #model.add(Dense(output_dim = 50, input_dim = 784, init = 'uniform'))
     model.add(Activation('sigmoid'))
     model.add(Dense(output_dim = 10, init = 'uniform' ))
@@ -74,16 +74,16 @@ def random_search(X, y, n_iter):
     return min_score, min_error, min_decay, min_momentum
 
 def print_training_result(X, y):
-    sgd = SGD(lr=0.001, nesterov = True)
-    score, mis_classification_rate = train_neural_network(X, y, sgd, 0.1)
+    sgd = SGD(lr=0.001, momentum = 0.95, nesterov = True)
+    score, mis_classification_rate = train_neural_network(X, y, sgd, 0.01)
     print 'score = %s' % score
     print 'mis_classification_rate = %s' % mis_classification_rate
 
 def main():
     X, y = load_data()
 
-    min_score, min_error, min_decay, min_momentum = random_search(X, y, 50)
-    #print_training_result(X, y)
+    #min_score, min_error, min_decay, min_momentum = random_search(X, y, 50)
+    print_training_result(X, y)
 
 if __name__ == '__main__':
     main()
