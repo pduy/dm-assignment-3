@@ -30,7 +30,7 @@ def main():
 	global var
 	global auc
 	n_train = 1000
-	n_repeat = 300
+	n_repeat = 50
 	bias = []
 	var = []
 	auc = []
@@ -39,7 +39,8 @@ def main():
 	for n, (name, estimator) in enumerate(estimators):
 
 		y_predict = np.zeros((len(X), n_repeat))
-		index = np.zeros((len(X), n_repeat))
+		occurence = np.zeros(len(X))
+		# index = np.zeros((len(X), n_repeat))
 		# Store list for calculate AUC
 		prediction = []
 		true = []
@@ -47,34 +48,37 @@ def main():
 		for i in range(n_repeat):
 			X_train, y_train,  X_test, y_test, test_index = resample_split(X,y,i)
 			for s in test_index:
-				index[s,i] += 1 
+				occurence[s] += 1
+				# index[s,i] += 1 
 
 			estimator.fit(X_train, y_train)
 			predict = estimator.predict(X_test)
 			# Count for prediction of class 1
 			for p in range(len(X_test)):
-				y_predict[p,i] += predict[p]
+				y_predict[test_index[p],i] = predict[p]
 
 		y_var = np.zeros((len(X),1))
 		y_bias = np.zeros((len(X),1))
 		for row in range(len(X)):
 
 			y1 = sum(y_predict[row])
-			y0 = sum(index[row])-y1
+			y0 = occurence[row] - y1
+			# y0 = sum(index[row])-y1
 			
 			if y[row]:		# true label == 1
 				mis = y0
 			else: 
 				mis = y1
 
-			if sum(index[row]):
-				weight = sum(index[row])/ len(X)
-				y_bias[row] = np.square(mis/ sum(index[row])) * weight
-				y_var[row] = 1- 0.5 * (np.square(y1/sum(index[row])) + np.square(y0/ sum(index[row])))
+
+			if occurence[row]:
+				weight = occurence[row]/ len(X)
+				y_bias[row] = np.square(mis/ occurence[row]) * weight
+				y_var[row] = 1- 0.5 * (np.square(y1/occurence[row]) + np.square(y0/ occurence[row]))
 				y_var[row] *= weight
 
 				# Stroe prediction for AUC values
-				prediction.append(y1/sum(index[row]))
+				prediction.append(y1/occurence[row])
 				true.append(y[row])
 
 			else:
