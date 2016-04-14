@@ -7,7 +7,7 @@ from sklearn.metrics import roc_auc_score
 
 def resample_split(X, y, state):
     # Train index
-    train_index = resample(range(0,len(X)), random_state = state, n_samples = n_train)
+    train_index = resample(range(0,len(X)), random_state = state)
     X_train = X[train_index]
     y_train = y[train_index]
     # Test are the rest
@@ -29,8 +29,7 @@ def main():
     global bias 
     global var
     global auc
-    n_train = 1000
-    n_repeat = 50
+    n_repeat = 100
     bias = []
     var = []
     auc = []
@@ -40,6 +39,7 @@ def main():
 
         y_predict = np.zeros((len(X), n_repeat))
         occurence = np.zeros(len(X))
+        auc_scores = []
         # index = np.zeros((len(X), n_repeat))
         # Store list for calculate AUC
         prediction = []
@@ -56,6 +56,11 @@ def main():
             # Count for prediction of class 1
             for p in range(len(X_test)):
                 y_predict[test_index[p],i] = predict[p]
+
+            # Compute auc score for this iteration
+            predict_proba = np.array(estimator.predict_proba(X_test))
+            local_auc = roc_auc_score(y_test, predict_proba[:,1])
+            auc_scores.append(local_auc)
 
         y_var = np.zeros(len(X))
         y_bias = np.zeros((len(X),1))
@@ -87,7 +92,8 @@ def main():
         # Sum over itterations
         bias.append(sum(y_bias)/len(X))
         var.append(sum(y_var)/len(X))
-        auc.append(roc_auc_score(true, prediction))
+        #auc.append(roc_auc_score(true, prediction))
+        auc.append(np.mean(auc_scores))
 
     line_graph(n_repeat)
 
