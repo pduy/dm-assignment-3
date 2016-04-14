@@ -29,7 +29,7 @@ def main():
     global bias 
     global var
     global auc
-    n_repeat = 100
+    n_repeat = 5 
     bias = []
     var = []
     auc = []
@@ -55,7 +55,7 @@ def main():
             predict = estimator.predict(X_test)
             # Count for prediction of class 1
             for p in range(len(X_test)):
-                y_predict[test_index[p],i] = predict[p]
+                y_predict[p,i] = predict[p]
 
             # Compute auc score for this iteration
             predict_proba = np.array(estimator.predict_proba(X_test))
@@ -118,8 +118,4 @@ def line_graph(n_repeat):
 
 if __name__ == '__main__':
     main()
-
-
-
-
 
