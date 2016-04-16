@@ -49,13 +49,12 @@ def main():
             X_train, y_train,  X_test, y_test, test_index = resample_split(X,y,i)
             for s in test_index:
                 occurence[s] += 1
-                # index[s,i] += 1 
 
             estimator.fit(X_train, y_train)
             predict = estimator.predict(X_test)
             # Count for prediction of class 1
             for p in range(len(X_test)):
-                y_predict[p,i] = predict[p]
+                y_predict[test_index[p],i] = predict[p]
 
             # Compute auc score for this iteration
             predict_proba = np.array(estimator.predict_proba(X_test))
@@ -66,23 +65,22 @@ def main():
         y_bias = np.zeros((len(X),1))
         for row in range(len(X)):
 
-            y1 = sum(y_predict[row])
-            y0 = occurence[row] - y1
-            # y0 = sum(index[row])-y1
+            n_predictions_1 = sum(y_predict[row])
+            n_predictions_0 = occurence[row] - n_predictions_1
             
             if y[row]:      # true label == 1
-                mis = y0
+                mis = n_predictions_0
             else: 
-                mis = y1
+                mis = n_predictions_1
 
             if occurence[row]:
-                weight = occurence[row]/ len(X)
+                weight = occurence[row] / n_repeat
                 y_bias[row] = np.square(mis/ occurence[row]) * weight
-                y_var[row] = 1- 0.5 * (np.square(y1/occurence[row]) + np.square(y0/ occurence[row]))
+                y_var[row] = 0.5 * (1 - (np.square(n_predictions_1 * 1.0 / occurence[row]) + np.square(n_predictions_0 * 1.0 / occurence[row])))
                 y_var[row] *= weight
 
                 # Stroe prediction for AUC values
-                prediction.append(y1/occurence[row])
+                prediction.append(n_predictions_1/occurence[row])
                 true.append(y[row])
 
             else:
